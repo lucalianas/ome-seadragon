@@ -40,6 +40,16 @@ module.exports = function(grunt) {
                    "static/ome_seadragon/js/openseadragon-scalebar.min.js":["src/js/openseadragon-scalebar.js"]
                 }
             }
+        },
+        jsdoc: {
+            dist: {
+                src: ['src/js/*.js'],
+                options: {
+                    destination: 'docs/jsdoc',
+                    template: "node_modules/ink-docstrap/template",
+                    configure: "node_modules/ink-docstrap/template/jsdoc.conf.json"
+                }
+            }
         }
     });
 
@@ -47,6 +57,7 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
+    grunt.loadNpmTasks('grunt-jsdoc');
 
     // Register tasks
     grunt.registerTask('default', [
