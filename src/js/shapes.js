@@ -149,6 +149,11 @@ function Shape(id, transform_matrix) {
         return this._shapeToPath().intersect(shape._shapeToPath(), {insert: draw});
     };
 
+    this.getUnion = function(shape, draw_union) {
+        var draw = typeof draw_union === 'undefined' ? false : draw_union;
+        return this._shapeToPath().unite(shape._shapeToPath(), {insert: draw});
+    };
+
     this.getCoveragePercentage = function(shape) {
         var shape_area = shape.getArea(1);
         if ((typeof this.paper_shape !== 'undefined') && (typeof shape_area !== 'undefined')) {
