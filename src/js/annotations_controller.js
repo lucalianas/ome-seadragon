@@ -531,4 +531,26 @@ function AnnotationsController(canvas_id, default_config) {
             console.warn('No intersection between the two shapes');
         }
     };
+
+    this.mergeShapes = function(shape1, shape2, replace_shapes, clear_union) {
+        var clear = typeof clear_union === 'undefined' ? true : clear_union;
+        var replace = typeof replace_shapes === 'undefined' ? true : replace_shapes;
+        if (shape1.containsShape(shape2) === false && shape2.containsShape(shape1) === false) {
+            if (shape1.intersectsShape(shape2) === true) {
+                var union = shape1.getUnion(shape2, !(clear));
+                if (replace === true) {
+                    console.log('REPLACING WITH UNION: ' + union);
+                    var union_path = ShapeConverter.extractPathSegments(union, this.x_offset, this.y_offset);
+                    this.deleteShape(shape2.id);
+                    this._replaceShapePath(shape1.id, union_path);
+                }
+            } else {
+                console.warn('Shapes can\'t be merged together');
+            }
+        } else if (shape1.containsShape(shape2) === true && replace === true) {
+            this.deleteShape(shape2);
+        } else if (shape2.containsShape(shape1) === true && replace === true) {
+            this.deleteShape(shape1);
+        }
+    };
 }
