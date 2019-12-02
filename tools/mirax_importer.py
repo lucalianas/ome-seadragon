@@ -66,9 +66,12 @@ class MiraxImporter(object):
                 hasher.update(f.read())
         elif path.isdir(file_name):
             for f in listdir(file_name):
-                with open(path.join(file_name, f), 'rb') as fp:
-                    for chunk in iter(lambda: fp.read(self.big_files_chunk_size), ''):
-                        hasher.update(chunk)
+                try:
+                    with open(path.join(file_name, f), 'rb') as fp:
+                        for chunk in iter(lambda: fp.read(self.big_files_chunk_size), ''):
+                            hasher.update(chunk)
+                except IOError, e:
+                    self.logger.error('Can\'t process file %s: %r', f, e.message)
         return hasher.hexdigest()
 
     def _get_file_details(self, file_name):
