@@ -95,8 +95,11 @@ def check_dataset(dataset_path, archive_dir):
     return mtype
 
 
-def extract(archive_handler, out_folder):
-    dataset_label = str(uuid4())
+def extract(archive_handler, out_folder, assigned_label=None):
+    if assigned_label is None:
+        dataset_label = str(uuid4())
+    else:
+        dataset_label = assigned_label
     out_folder = dest_folder = os.path.join(out_folder, dataset_label)
     if not os.path.isdir(dest_folder):
         logger.info('Extracting archive to folder {0}'.format(out_folder))
@@ -107,29 +110,35 @@ def extract(archive_handler, out_folder):
         raise DatasetPathAlreadyExistError('Destination path {0} for archive extraction already exists'.format(dest_folder))
 
 
-def extract_zip_archive(archive_file, out_folder):
+def extract_zip_archive(archive_file, out_folder, assigned_label=None):
     with zipfile.ZipFile(archive_file, 'r') as f:
-        return extract(f, out_folder)
+        return extract(f, out_folder, assigned_label)
 
 
-def extract_tar_archive(archive_file, out_folder):
+def extract_tar_archive(archive_file, out_folder, assigned_label=None):
     with tarfile.TarFile(archive_file, 'r') as f:
-        return extract(f, out_folder)
+        return extract(f, out_folder, assigned_label)
 
 
-def rename_archive(archive_file, out_folder=settings.DATASETS_REPOSITORY):
+def rename_archive(archive_file, assigned_label=None, out_folder=settings.DATASETS_REPOSITORY):
     _, ext = os.path.splitext(archive_file)
-    new_dset_label = str(uuid4())
-    new_fpath = os.path.join(out_folder, "{0}{1}".format(new_dset_label, ext))
-    os.rename(archive_file, new_fpath)
-    return new_dset_label, new_fpath
+    if assigned_label is None:
+        new_dset_label = str(uuid4())
+    else:
+        new_dset_label = assigned_label
+    new_fpath = os.path.join(out_folder, f'{new_dset_label}{ext}')
+    if not os.path.isdir(new_fpath):
+        os.rename(archive_file, new_fpath)
+        return new_dset_label, new_fpath
+    else:
+        raise DatasetPathAlreadyExistError(f'Destination path {new_fpath} for archive rename already exists')
 
 
-def extract_archive(archive_file, out_folder=settings.DATASETS_REPOSITORY, keep_archive=False):
+def extract_archive(archive_file, assigned_label=None, out_folder=settings.DATASETS_REPOSITORY, keep_archive=False):
     if zipfile.is_zipfile(archive_file):
-        ds_label, dest_folder = extract_zip_archive(archive_file, out_folder)
+        ds_label, dest_folder = extract_zip_archive(archive_file, out_folder, assigned_label)
     elif tarfile.is_tarfile(archive_file):
-        ds_label, dest_folder = extract_tar_archive(archive_file, out_folder)
+        ds_label, dest_folder = extract_tar_archive(archive_file, out_folder, assigned_label)
     else:
         raise ArchiveFormatError('Archive file {0} is nor ZIP or TAR format'.format(archive_file))
     logger.info('Archive extraction completed')
