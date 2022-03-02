@@ -512,21 +512,27 @@ def list_array_datasets(request, conn=None, **kwargs):
 @login_required()
 def register_array_dataset(request, conn=None, **kwargs):
     dataset_label = request.GET.get('dataset_label')
+    assigned_label = request.GET.get('assigned_label', default=None)
     if not original_files.is_valid_filename(dataset_label):
         return HttpResponseServerError('Invalid dataset name received: {0}'.format(dataset_label))
     try:
         dataset_path, is_dir = datasets_files.get_dataset_file_path(dataset_label)
+        # if assigned_label is specified, check if an original file with the same label already exists
+        # before making chaning on the file system
+        if not assigned_label is None:
+            mtype = datasets_files.check_dataset(dataset_path)
+            ofile = original_files.get_original_file(conn, assigned_label, mtype)
+            if not ofile is None:
+                return HttpResponseServerError(f'OriginalFile with name {assigned_label} and mimetype {mtype} already exists'))
         if not is_dir:
             if bool(strtobool(request.GET.get('extract_archive', default='true'))) == False:
-                dataset_label, dataset_path = datasets_files.rename_archive(dataset_path)
+                dataset_label, dataset_path = datasets_files.rename_archive(dataset_path, assigned_label)
             else:
-                try:
-                    keep_archive = bool(strtobool(request.GET.get('keep_archive', default='false')))
-                    dataset_label, dataset_path = datasets_files.extract_archive(dataset_path,
-                                                                                 keep_archive=keep_archive)
-                    is_dir = True
-                except datasets_files.DatasetPathAlreadyExistError as dpe:
-                    return HttpResponseServerError('{0}'.format(dpe))
+                keep_archive = bool(strtobool(request.GET.get('keep_archive', default='false')))
+                dataset_label, dataset_path = datasets_files.extract_archive(dataset_path,
+                                                                             assigned_label=assigned_label,
+                                                                             keep_archive=keep_archive)
+                is_dir = True
         try:
             mtype = datasets_files.check_dataset(dataset_path, is_dir)
             dataset_id = original_files.save_original_file(conn, dataset_label, dataset_path, mtype,
@@ -540,6 +546,8 @@ def register_array_dataset(request, conn=None, **kwargs):
             return HttpResponseServerError('{0}'.format(dfe))
         except DuplicatedEntryError as dee:
             return HttpResponseServerError('{0}'.format(dee))
+    except datasets_files.DatasetPathAlreadyExistError as dpe:
+        return HttpResponseServerError('{0}'.format(dpe))
     except datasets_files.InvalidDatasetPath as idp:
         return HttpResponseServerError('{0}'.format(idp))
     except settings.ServerConfigError as sce:
